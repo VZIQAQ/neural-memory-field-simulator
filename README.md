@@ -4,7 +4,7 @@
 
 一个用于探索 AI 记忆检索机制的交互式模拟器。
 
-> 🌐 **非中文用户**：本文档以中文撰写。如需英文版本，可将本 README 内容粘贴至任意 AI 工具（如 ChatGPT、Claude、Gemini 等）翻译为英文。
+> 🌐 **Non-Chinese Users**: The simulator UI is in Chinese. If you need an English version, you can paste the HTML file into any AI tool (ChatGPT, Claude, Gemini, etc.) and ask it to translate all Chinese text to English.
 
 ---
 
