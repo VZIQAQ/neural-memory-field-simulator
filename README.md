@@ -120,7 +120,6 @@ All conclusions in this document are reproducible using these data.
 ## 下一步计划 / Next Steps
 
 - V6：可调随机种子 + 时序边遗忘机制探索
-- 接入真实 LLM 的书童协议系统
 
 ## 许可证 | License
 
