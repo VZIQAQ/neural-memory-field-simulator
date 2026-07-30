@@ -11,7 +11,7 @@
 
 ## 界面预览 | Screenshot
 
-![神经记忆场模拟器界面](v2-7ba83d65557235358c32a0be1c593a7d_720w.png)
+![神经记忆场模拟器界面](assets/v2-7ba83d65557235358c32a0be1c593a7d_720w.png)
 
 ## 这是什么 | What is this
 
