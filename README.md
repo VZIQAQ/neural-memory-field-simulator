@@ -6,6 +6,7 @@
 
 > 🌐 **Non-Chinese Users**: The simulator UI is in Chinese. If you need an English version, you can paste the HTML file into any AI tool (ChatGPT, Claude, Gemini, etc.) and ask it to translate all Chinese text to English.
 
+
 ---
 
 ## 界面预览 | Screenshot
