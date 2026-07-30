@@ -4,7 +4,7 @@
 
 一个用于探索 AI 记忆检索机制的交互式模拟器。
 
-An interactive simulator for exploring AI memory retrieval mechanisms.
+> 🌐 **非中文用户**：本文档以中文撰写。如需英文版本，可将本 README 内容粘贴至任意 AI 工具（如 ChatGPT、Claude、Gemini 等）翻译为英文。
 
 ---
 
