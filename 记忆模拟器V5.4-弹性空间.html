@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神经记忆场 · V5.4（弹性空间版）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f7fa;
+    color: #1f2a3a;
+    min-height: 100vh;
+    padding: 12px;
+  }
+  .container { max-width: 1700px; margin: 0 auto; }
+  h1 {
+    font-size: 18px; font-weight: 600; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+    color: #1f2a3a;
+  }
+  h1 small { font-size: 12px; font-weight: 400; color: #6b7a8f; }
+  .app-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+
+  .panel {
+    flex: 1;
+    min-width: 260px;
+    max-width: 320px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: thin;
+  }
+  .panel::-webkit-scrollbar { width: 4px; }
+  .panel::-webkit-scrollbar-thumb { background: #c1c7cd; border-radius: 4px; }
+
+  .card {
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    flex-shrink: 0;
+  }
+  .card-title {
+    font-size: 13px; font-weight: 600; color: #1f2a3a;
+    margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .control { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .control label { font-size: 12px; color: #4a5a6e; min-width: 110px; }
+  .control input[type="range"] { flex: 1; accent-color: #2d7aff; }
+  .control .val {
+    font-size: 12px; color: #1f2a3a; min-width: 40px; text-align: right;
+    font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, monospace;
+  }
+  .param-hint {
+    font-size: 11px; color: #6b7a8f; margin: 0 0 8px 120px; line-height: 1.4;
+  }
+  .btn {
+    padding: 5px 12px; border-radius: 6px; border: 1px solid #d0d7de;
+    background: #f6f8fa; color: #1f2a3a; font-size: 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn:hover { background: #e1e4e8; }
+  .btn.primary { background: #2d7aff; color: #fff; border-color: #2d7aff; }
+  .btn.primary:hover { background: #1a6ae6; }
+  .btn.danger { background: #e5484d; color: #fff; border-color: #e5484d; }
+  .btn.danger:hover { background: #d33a3f; }
+  .btn.secondary { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+  .btn.secondary:hover { background: #7c3aed; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .canvas-wrap {
+    flex: 2;
+    min-width: 480px;
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+  #canvas { width: 100%; height: 480px; display: block; background: #ffffff; }
+
+  .metrics-row {
+    display: flex; gap: 14px; padding: 8px 12px;
+    border-top: 1px solid #e1e4e8; flex-wrap: wrap;
+    background: #fafbfc;
+  }
+  .metric { display: flex; align-items: baseline; gap: 4px; font-size: 12px; }
+  .metric .m-label { color: #6b7a8f; }
+  .metric .m-num {
+    font-weight: 600; font-size: 16px;
+    font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, monospace;
+  }
+  .legend {
+    font-size: 11px; color: #4a5a6e;
+    display: flex; gap: 12px; padding: 6px 12px; flex-wrap: wrap;
+    border-top: 1px solid #e1e4e8; background: #fafbfc;
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  .recall-box {
+    font-size: 11px; line-height: 1.5; color: #4a5a6e;
+    background: #fafbfc; padding: 8px; border-radius: 6px;
+    border: 1px dashed #d0d7de; max-height: 200px; overflow-y: auto;
+  }
+  .node-chip {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    font-size: 10px; margin: 1px 4px 1px 0;
+    background: rgba(45, 122, 255, 0.12); color: #2d7aff;
+  }
+  .node-chip.current { background: rgba(35, 160, 80, 0.15); color: #1a7a4a; }
+  .status-bar { font-size: 12px; color: #4a5a6e; padding: 4px 0; min-height: 22px; }
+  .layer-info {
+    font-size: 11px; color: #6b7a8f; padding: 4px 0;
+    border-top: 1px solid #e1e4e8; margin-top: 6px;
+  }
+  select {
+    flex: 1; padding: 3px 6px; border-radius: 6px; border: 1px solid #d0d7de;
+    background: #ffffff; color: #1f2a3a; font-size: 12px;
+  }
+  input[type="checkbox"] {
+    accent-color: #2d7aff;
+    width: 16px; height: 16px; margin-right: 4px;
+  }
+  .checkbox-group {
+    display: flex; align-items: center; gap: 8px; margin: 4px 0;
+    font-size: 12px; color: #1f2a3a;
+  }
+  .btn-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+  @media (max-width: 900px) {
+    .panel { max-width: 100%; max-height: none; }
+    .canvas-wrap { min-width: 0; }
+    #canvas { height: 360px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>
+    ⚡ 神经记忆场 · V5.4 弹性空间版
+    <small>空间自适应 · 节点密度恒定</small>
+  </h1>
+  <div class="app-row">
+    <!-- 左侧面板 -->
+    <div class="panel">
+      <!-- 对话流程 -->
+      <div class="card">
+        <div class="card-title">对话流程</div>
+        <div class="control">
+          <label>当前轮次</label>
+          <span class="val" id="round-num">0</span>
+        </div>
+        <div class="control">
+          <label>查询类型</label>
+          <select id="query-type">
+            <option value="current" selected>当前对话（主题锚定）</option>
+            <option value="jump">临时跳脱话题</option>
+            <option value="vague">模糊/歧义查询</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="btn-new">新建对话</button>
+          <button class="btn" id="btn-user">用户输入</button>
+          <button class="btn" id="btn-add-node">➕ 新增节点</button>
+          <button class="btn danger" id="btn-reset">重置</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn secondary" id="btn-export-csv">📊 导出数据 (CSV)</button>
+          <button class="btn" id="btn-reset-params">↺ 重置参数</button>
+        </div>
+      </div>
+
+      <!-- 温层参数 -->
+      <div class="card">
+        <div class="card-title">🎛️ 温层参数</div>
+        <div class="control">
+          <label>温层节点总数</label>
+          <input type="range" id="param-nodes" min="60" max="5000" value="500" step="50">
+          <span class="val" id="val-nodes">500</span>
+        </div>
+        <div class="param-hint">记忆场中的总节点数，含基础记忆和当前窗口</div>
+        <div class="control">
+          <label>当前窗口初始数</label>
+          <input type="range" id="param-current" min="10" max="200" value="30" step="5">
+          <span class="val" id="val-current">30</span>
+        </div>
+        <div class="param-hint">新建对话时，初始分散在各处的窗口节点数</div>
+        <div class="control">
+          <label>最大度数</label>
+          <input type="range" id="param-maxdeg" min="3" max="15" value="8" step="1">
+          <span class="val" id="val-maxdeg">8</span>
+        </div>
+        <div class="param-hint">一个节点最多能连接多少个其他节点</div>
+        <div class="control">
+          <label>幂律指数 γ</label>
+          <input type="range" id="param-gamma" min="1.5" max="4.0" value="2.5" step="0.1">
+          <span class="val" id="val-gamma">2.5</span>
+        </div>
+        <div class="param-hint">越大网络越集中，少数节点成"枢纽"</div>
+      </div>
+
+      <!-- ===== 弹性空间控制（新增） ===== -->
+      <div class="card">
+        <div class="card-title">📐 弹性空间</div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="param-auto-scale" checked>
+          <label for="param-auto-scale">启用自动缩放</label>
+        </div>
+        <div class="param-hint">根据节点数自动调整空间范围，保持密度恒定</div>
+
+        <div class="control">
+          <label>基准节点数</label>
+          <input type="range" id="param-base-nodes" min="100" max="2000" value="500" step="50">
+          <span class="val" id="val-base-nodes">500</span>
+        </div>
+        <div class="param-hint">空间缩放以此为基准，节点数=基准时缩放系数=1.0</div>
+
+        <div class="control">
+          <label>手动缩放系数</label>
+          <input type="range" id="param-manual-scale" min="0.3" max="4.0" value="1.0" step="0.05">
+          <span class="val" id="val-manual-scale">1.00</span>
+        </div>
+        <div class="param-hint">自动缩放关闭时，手动控制空间大小</div>
+
+        <div class="layer-info" id="scale-info" style="margin-top:6px;">当前缩放: 1.00 | 空间范围: ±0.80</div>
+      </div>
+
+      <!-- 检索参数 -->
+      <div class="card">
+        <div class="card-title">🎛️ 检索参数</div>
+        <div class="control">
+          <label>热核步数</label>
+          <input type="range" id="param-steps" min="1" max="15" value="5" step="1">
+          <span class="val" id="val-steps">5</span>
+        </div>
+        <div class="param-hint">信号在网络上传播的跳数。越多"唤醒"范围越广</div>
+        <div class="control">
+          <label>热核系数 α</label>
+          <input type="range" id="param-alpha" min="0.05" max="0.40" value="0.15" step="0.01">
+          <span class="val" id="val-alpha">0.15</span>
+        </div>
+        <div class="param-hint">每步保留原记忆的比例。越大记忆越"固执"</div>
+        <div class="control">
+          <label>链路深度</label>
+          <input type="range" id="param-depth" min="5" max="30" value="12" step="1">
+          <span class="val" id="val-depth">12</span>
+        </div>
+        <div class="param-hint">从主峰出发，沿边向外走多少步</div>
+        <div class="control">
+          <label>链路衰减</label>
+          <input type="range" id="param-decay" min="0.50" max="0.95" value="0.75" step="0.01">
+          <span class="val" id="val-decay">0.75</span>
+        </div>
+        <div class="param-hint">每走一步，能量保留的比例</div>
+        <div class="control">
+          <label>跳脱概率</label>
+          <input type="range" id="param-jump" min="0" max="0.30" value="0.08" step="0.01">
+          <span class="val" id="val-jump">8%</span>
+        </div>
+        <div class="param-hint">查询突然跳到随机位置的概率</div>
+
+        <div class="control">
+          <label>注入范围 σ</label>
+          <input type="range" id="param-sigma" min="0.10" max="0.80" value="0.25" step="0.01">
+          <span class="val" id="val-sigma">0.25</span>
+        </div>
+        <div class="param-hint">高斯核宽度。越大，查询影响范围越广</div>
+
+        <div class="control">
+          <label>注入阈值</label>
+          <input type="range" id="param-thresh" min="0.01" max="0.30" value="0.15" step="0.01">
+          <span class="val" id="val-thresh">0.15</span>
+        </div>
+        <div class="param-hint">只有相似度高于此值的节点才被激活</div>
+      </div>
+
+      <!-- 阈值与塑形 -->
+      <div class="card">
+        <div class="card-title">🎛️ 阈值与塑形</div>
+        <div class="control">
+          <label>T1 确定阈值</label>
+          <input type="range" id="param-t1-certain" min="0.60" max="0.90" value="0.75" step="0.01">
+          <span class="val" id="val-t1-certain">0.75</span>
+        </div>
+        <div class="param-hint">高于此值系统认为"确定"，直接回答</div>
+        <div class="control">
+          <label>T1 追问阈值</label>
+          <input type="range" id="param-t1-question" min="0.40" max="0.70" value="0.60" step="0.01">
+          <span class="val" id="val-t1-question">0.60</span>
+        </div>
+        <div class="param-hint">低于此值系统认为"歧义"，触发追问</div>
+        <div class="control">
+          <label>次峰比追问阈值</label>
+          <input type="range" id="param-spr" min="0.30" max="0.80" value="0.50" step="0.01">
+          <span class="val" id="val-spr">0.50</span>
+        </div>
+        <div class="param-hint">第二个峰超过主峰此比例时，也触发追问</div>
+        <div class="control">
+          <label>Hebbian 学习率 η</label>
+          <input type="range" id="param-hebbian-eta" min="0.001" max="0.050" value="0.010" step="0.001">
+          <span class="val" id="val-hebbian-eta">0.010</span>
+        </div>
+        <div class="param-hint">边权重每次增强的幅度。越大记忆"黏性"越强</div>
+        <div class="control">
+          <label>Hebbian 最小激活</label>
+          <input type="range" id="param-hebbian-min" min="0.05" max="0.50" value="0.15" step="0.01">
+          <span class="val" id="val-hebbian-min">0.15</span>
+        </div>
+        <div class="param-hint">只有激活值高于此值的节点才会参与塑形</div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="param-hebbian-on" checked>
+          <label for="param-hebbian-on">启用 Hebbian 塑形</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="param-multi-peak" checked>
+          <label for="param-multi-peak">多峰传播（从所有有效峰出发）</label>
+        </div>
+      </div>
+
+      <!-- 时序与锚定 -->
+      <div class="card">
+        <div class="card-title">🔗 时序与锚定</div>
+        <div class="control">
+          <label>话题聚焦度</label>
+          <input type="range" id="param-topic-radius" min="0.05" max="0.40" value="0.15" step="0.01">
+          <span class="val" id="val-topic-radius">0.15</span>
+        </div>
+        <div class="param-hint">窗口节点围绕主题锚点的紧密程度。越小话题越聚焦</div>
+        <div class="control">
+          <label>外部簇触发概率</label>
+          <input type="range" id="param-cluster-prob" min="0.10" max="1.00" value="0.70" step="0.01">
+          <span class="val" id="val-cluster-prob">70%</span>
+        </div>
+        <div class="param-hint">查询落到外部记忆簇的概率。越高越容易"回忆"旧话题</div>
+        <div class="control">
+          <label>时序边初始权重</label>
+          <input type="range" id="param-temporal-weight" min="0.10" max="0.80" value="0.40" step="0.01">
+          <span class="val" id="val-temporal-weight">0.40</span>
+        </div>
+        <div class="param-hint">新建节点与上一个节点之间的"因果链"强度</div>
+        <div class="control">
+          <label>桥梁连接数</label>
+          <input type="range" id="param-bridge" min="0" max="5" value="2" step="1">
+          <span class="val" id="val-bridge">2</span>
+        </div>
+        <div class="param-hint">新节点连接几个外部记忆节点作为"跨窗口桥"</div>
+        <div class="control">
+          <label>同窗口连接数</label>
+          <input type="range" id="param-same-window" min="0" max="6" value="3" step="1">
+          <span class="val" id="val-same-window">3</span>
+        </div>
+        <div class="param-hint">新节点额外连接几个同窗口节点（时序边的补充）</div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="param-temporal-on" checked>
+          <label for="param-temporal-on">启用时序边</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="param-anchor-on" checked>
+          <label for="param-anchor-on">启用外部锚定</label>
+        </div>
+        <div style="margin-top:6px;">
+          <button class="btn" id="btn-refresh" style="width:100%;">🔄 应用参数并重新检索</button>
+        </div>
+      </div>
+
+      <!-- 语义簇管理 -->
+      <div class="card">
+        <div class="card-title">🧠 语义簇管理</div>
+        <div class="control">
+          <label>簇数量</label>
+          <input type="range" id="param-cluster-count" min="5" max="50" value="10" step="1">
+          <span class="val" id="val-cluster-count">10</span>
+        </div>
+        <div class="param-hint">语义话题数量，越多记忆场越精细</div>
+        <div class="control">
+          <label>簇密度不均度</label>
+          <input type="range" id="param-cluster-skew" min="1" max="10" value="5" step="1">
+          <span class="val" id="val-cluster-skew">5</span>
+        </div>
+        <div class="param-hint">1=均等分布，10=少数大簇+多数小簇</div>
+        <div class="btn-row">
+          <button class="btn primary" id="btn-gen-clusters">🎲 生成簇分布</button>
+          <button class="btn" id="btn-random-clusters">🔄 重新随机分布</button>
+        </div>
+        <div class="layer-info" id="cluster-info" style="margin-top:6px;">簇: 未生成</div>
+      </div>
+    </div>
+
+    <!-- 中间：画布 -->
+    <div class="canvas-wrap">
+      <canvas id="canvas"></canvas>
+      <div class="metrics-row">
+        <div class="metric"><span class="m-label">T1</span><span class="m-num" id="m-t1" style="color:#2d7aff;">—</span></div>
+        <div class="metric"><span class="m-label">次峰比</span><span class="m-num" id="m-spr" style="color:#d29922;">—</span></div>
+        <div class="metric"><span class="m-label">峰数</span><span class="m-num" id="m-peaks" style="color:#e5484d;">—</span></div>
+        <div class="metric"><span class="m-label">状态</span><span class="m-num" id="m-state" style="font-size:13px;color:#4a5a6e;">—</span></div>
+        <div class="metric"><span class="m-label">唤醒节点</span><span class="m-num" id="m-awake" style="color:#1a7a4a;">—</span></div>
+        <div class="metric"><span class="m-label">取回Token</span><span class="m-num" id="m-tokens" style="color:#8b5cf6;">—</span></div>
+        <div class="metric"><span class="m-label">窗口Token</span><span class="m-num" id="m-window" style="color:#1a7a4a;">—</span></div>
+        <div class="metric"><span class="m-label">总Token</span><span class="m-num" id="m-total" style="color:#1f2a3a;">—</span></div>
+        <div class="metric"><span class="m-label">缩放</span><span class="m-num" id="m-scale" style="color:#8b5cf6;font-size:13px;">1.00</span></div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><span class="dot" style="background:#1a7a4a;"></span> 当前窗口节点</div>
+        <div class="legend-item"><span class="dot" style="background:#8b9aab;"></span> 外部记忆节点</div>
+        <div class="legend-item"><span class="dot" style="background:#2d7aff;"></span> 查询点</div>
+        <div class="legend-item"><span class="dot" style="background:#8b5cf6;"></span> 主题锚点</div>
+        <div class="legend-item"><span class="dot" style="background:#e5484d;"></span> 主峰节点</div>
+        <div class="legend-item"><span class="dot" style="background:#f0883e;"></span> 链路唤醒节点</div>
+        <div class="legend-item"><span style="color:#2d7aff;">──</span> 空间边（语义）</div>
+        <div class="legend-item"><span style="color:#1a7a4a;border-bottom:2px dashed #1a7a4a;">┈┈</span> 时序边（因果）</div>
+        <div class="legend-item"><span style="color:#8b5cf6;">◉</span> 语义簇中心</div>
+      </div>
+    </div>
+
+    <!-- 右侧面板 -->
+    <div class="panel" style="max-width:320px; max-height: calc(100vh - 80px); overflow-y: auto;">
+      <div class="card">
+        <div class="card-title">链路传播唤醒的记忆</div>
+        <div class="recall-box" id="recall-box">
+          <div style="color:#6b7a8f;">点击「新建对话」初始化</div>
+        </div>
+        <div class="layer-info" id="layer-info">
+          温层: 0 | 窗口: 0 | 时序边: 0 | 缩放: 1.00
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">本轮检索详情</div>
+        <div class="status-bar" id="retrieve-status">—</div>
+        <div id="detail-box" style="font-size:11px;color:#4a5a6e;padding:4px 0;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">上下文组装预览</div>
+        <div class="recall-box" id="context-preview">
+          <div style="color:#6b7a8f;">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const $ = id => document.getElementById(id);
+
+  // ================================================================
+  // 状态
+  // ================================================================
+  let warmNodes = [];
+  let round = 0;
+  let isDialogOpen = false;
+  let queryX = 0, queryY = 0;
+  let currentH = [];
+  let currentPeaks = [];
+  let currentT1 = 0;
+  let currentSPR = 0;
+  let currentState = '—';
+  let linkAwakeNodes = new Map();
+  let totalRecallTokens = 0;
+  let isJump = false;
+  let lastAddedNodeIdx = -1;
+  let lastLinkAwakeNodes = new Map();
+  let temporalEdgeCount = 0;
+  let historyData = [];
+
+  let windowContextTokens = 0;
+  let totalTokens = 0;
+
+  // 主题锚点
+  let topicAnchor = { x: 0, y: 0 };
+  let topicRadius = 0.15;
+
+  // 语义簇
+  let topicCenters = [];
+  let topicWeights = [];
+  let isClustersGenerated = false;
+
+  // ===== 弹性空间 =====
+  let spaceScale = 1.0;
+  let baseNodeCount = 500;
+  let autoScaleEnabled = true;
+  let manualScale = 1.0;
+
+  const WORDS = [
+    "Python","装饰器","闭包","迭代器","生成器","类","对象","继承","多态","封装",
+    "JavaScript","Promise","异步","回调","事件循环","原型链","作用域","ES6","模块化",
+    "函数","变量","常量","列表","字典","元组","集合","字符串","正则","异常",
+    "数据库","SQL","索引","事务","ORM","缓存","Redis","MongoDB","PostgreSQL","MySQL",
+    "网络","HTTP","TCP","WebSocket","REST","API","JSON","XML","OAuth","JWT",
+    "前端","React","Vue","组件","状态","路由","DOM","CSS","Flex","Grid",
+    "后端","Flask","Django","FastAPI","Express","Spring","微服务","容器","Docker","K8s",
+    "算法","排序","搜索","图","树","动态规划","贪心","回溯","分治","递归",
+    "设计模式","单例","工厂","观察者","策略","适配器","代理","装饰","模板","命令",
+    "安全","加密","哈希","签名","漏洞","注入","XSS","CSRF","HTTPS","防火墙"
+  ];
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function dist2d(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+  function makeRNG(seed) {
+    let s = seed >>> 0; if (s === 0) s = 1;
+    return function() { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return (s >>> 0) / 4294967296; };
+  }
+  function gaussPair(rng) {
+    let u = 1 - rng(), v = 1 - rng();
+    let r = Math.sqrt(-2 * Math.log(u));
+    return [r * Math.cos(2 * Math.PI * v), r * Math.sin(2 * Math.PI * v)];
+  }
+  function generateContent(rng) {
+    const len = Math.floor(rng() * 300) + 120;
+    let text = '';
+    while (text.length < len) {
+      const w = WORDS[Math.floor(rng() * WORDS.length)];
+      text += w + '，';
+    }
+    return text.substring(0, len);
+  }
+  function powerLawDegree(rng, minDeg, maxDeg, gamma) {
+    const u = rng();
+    let sum = 0;
+    const probs = [];
+    for (let k = minDeg; k <= maxDeg; k++) {
+      const p = Math.pow(k, -gamma);
+      probs.push(p);
+      sum += p;
+    }
+    let cum = 0;
+    const target = u * sum;
+    for (let i = 0; i < probs.length; i++) {
+      cum += probs[i];
+      if (cum >= target) return minDeg + i;
+    }
+    return minDeg;
+  }
+
+  function getCurrentNodes() { return warmNodes.filter(n => n.isCurrent); }
+
+  // ================================================================
+  // 弹性空间计算
+  // ================================================================
+  function computeSpaceScale() {
+    const totalNodes = parseInt($('param-nodes').value) || 500;
+    const baseNodes = parseInt($('param-base-nodes').value) || 500;
+    const auto = $('param-auto-scale').checked;
+    const manual = parseFloat($('param-manual-scale').value) || 1.0;
+
+    if (auto) {
+      // 自动缩放：保持密度恒定
+      return Math.sqrt(totalNodes / baseNodes);
+    } else {
+      return manual;
+    }
+  }
+
+  function getSpaceRange() {
+    return 0.8 * spaceScale;
+  }
+
+  // ================================================================
+  // 空间哈希（V5.4 原有，保持不变）
+  // ================================================================
+  const SpatialHash = {
+    cellSize: 0.15,
+    grid: new Map(),
+
+    clear() { this.grid.clear(); },
+
+    insert(node, idx) {
+      const gx = Math.floor(node.x / this.cellSize);
+      const gy = Math.floor(node.y / this.cellSize);
+      const key = `${gx},${gy}`;
+      if (!this.grid.has(key)) this.grid.set(key, []);
+      this.grid.get(key).push(idx);
+    },
+
+    queryNeighbors(x, y, maxDist) {
+      const gx = Math.floor(x / this.cellSize);
+      const gy = Math.floor(y / this.cellSize);
+      const maxDistSq = maxDist * maxDist;
+      const range = Math.ceil(maxDist / this.cellSize);
+      const results = [];
+
+      for (let dx = -range; dx <= range; dx++) {
+        for (let dy = -range; dy <= range; dy++) {
+          const cell = this.grid.get(`${gx+dx},${gy+dy}`);
+          if (!cell) continue;
+          for (const idx of cell) results.push(idx);
+        }
+      }
+      return results;
+    },
+
+    buildEdges(nodes, maxDeg, rng) {
+      this.clear();
+      for (let i = 0; i < nodes.length; i++) this.insert(nodes[i], i);
+
+      const maxDist = 0.5 * spaceScale;
+      const maxDistSq = maxDist * maxDist;
+      const allEdges = [];
+
+      for (let i = 0; i < nodes.length; i++) {
+        const candidates = this.queryNeighbors(nodes[i].x, nodes[i].y, maxDist);
+        for (const j of candidates) {
+          if (j <= i) continue;
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          if (dx*dx + dy*dy > maxDistSq) continue;
+          const d = Math.sqrt(dx*dx + dy*dy);
+          allEdges.push({ i, j, sim: Math.exp(-d*d / (0.125 * spaceScale * spaceScale)) });
+        }
+      }
+
+      allEdges.sort((a, b) => b.sim - a.sim);
+      const degCount = new Int32Array(nodes.length);
+
+      for (const e of allEdges) {
+        if (degCount[e.i] >= nodes[e.i].degree || degCount[e.j] >= nodes[e.j].degree) continue;
+        if (rng() < e.sim * 1.5) {
+          nodes[e.i].neighbors.push({ idx: e.j, weight: e.sim });
+          nodes[e.j].neighbors.push({ idx: e.i, weight: e.sim });
+          degCount[e.i]++; degCount[e.j]++;
+        }
+      }
+
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].neighbors.length === 0) {
+          let best = -1, bd = Infinity;
+          const cands = this.queryNeighbors(nodes[i].x, nodes[i].y, maxDist);
+          for (const j of cands) {
+            if (i === j) continue;
+            const d = dist2d(nodes[i], nodes[j]);
+            if (d < bd && nodes[j].neighbors.length < nodes[j].degree) { bd = d; best = j; }
+          }
+          if (best >= 0) {
+            const sim = Math.exp(-bd*bd / (0.125 * spaceScale * spaceScale));
+            nodes[i].neighbors.push({ idx: best, weight: sim });
+            nodes[best].neighbors.push({ idx: i, weight: sim });
+          }
+        }
+      }
+      return allEdges.length;
+    }
+  };
+
+  // ================================================================
+  // 语义簇管理
+  // ================================================================
+  function generateClusters() {
+    const rng = makeRNG(Date.now() % 100000);
+    const count = parseInt($('param-cluster-count').value);
+    const skew = parseInt($('param-cluster-skew').value);
+    const range = getSpaceRange();
+
+    topicCenters = [];
+    topicWeights = [];
+
+    for (let i = 0; i < count; i++) {
+      let cx, cy, attempts = 0;
+      do {
+        cx = rng() * range * 2 - range;
+        cy = rng() * range * 2 - range;
+        attempts++;
+      } while (attempts < 30 && topicCenters.some(c => dist2d({x:cx,y:cy}, c) < 0.15 * spaceScale));
+
+      topicCenters.push({ x: cx, y: cy, spread: (0.06 + rng() * 0.14) * spaceScale });
+    }
+
+    const weights = [];
+    for (let i = 0; i < count; i++) {
+      weights.push(Math.pow(i + 1, -skew * 0.3));
+    }
+    const totalW = weights.reduce((a, b) => a + b, 0);
+    topicWeights = weights.map(w => w / totalW);
+
+    isClustersGenerated = true;
+    updateClusterInfo();
+
+    if (warmNodes.length > 0) redistributeExternalNodes();
+    $('retrieve-status').textContent = `✅ 已生成 ${count} 个语义簇 (缩放 ${spaceScale.toFixed(2)})`;
+    drawField();
+  }
+
+  function randomizeClusters() {
+    generateClusters();
+    $('retrieve-status').textContent = '✅ 已重新随机分布语义簇';
+  }
+
+  function updateClusterInfo() {
+    const count = topicCenters.length;
+    if (count === 0) { $('cluster-info').textContent = '簇: 未生成'; return; }
+    const maxW = Math.max(...topicWeights);
+    const minW = Math.min(...topicWeights);
+    $('cluster-info').textContent = `簇: ${count} | 最大: ${(maxW*100).toFixed(1)}% | 最小: ${(minW*100).toFixed(1)}%`;
+  }
+
+  function redistributeExternalNodes() {
+    const rng = makeRNG(42);
+    const range = getSpaceRange();
+    for (const node of warmNodes) {
+      if (node.isCurrent) continue;
+
+      let r = rng();
+      let topicIdx = 0;
+      for (let t = 0; t < topicWeights.length; t++) {
+        r -= topicWeights[t];
+        if (r <= 0) { topicIdx = t; break; }
+      }
+
+      const center = topicCenters[topicIdx];
+      const [g1, g2] = gaussPair(rng);
+      node.x = clamp(center.x + g1 * center.spread, -range, range);
+      node.y = clamp(center.y + g2 * center.spread, -range, range);
+      node.cluster = topicIdx;
+    }
+
+    const maxDeg = parseInt($('param-maxdeg').value);
+    const rng2 = makeRNG(42);
+    SpatialHash.buildEdges(warmNodes, maxDeg, rng2);
+    drawField();
+  }
+
+  function getExternalClusterCenters() {
+    if (!isClustersGenerated || topicCenters.length === 0) return [];
+    return topicCenters.map((c, i) => ({ x: c.x, y: c.y, name: '话题' + i }));
+  }
+
+  // ================================================================
+  // initField —— 弹性空间版
+  // ================================================================
+  function initField() {
+    // 计算空间缩放
+    spaceScale = computeSpaceScale();
+    const range = getSpaceRange();
+
+    const rng = makeRNG(42);
+    const totalNodes = parseInt($('param-nodes').value);
+    const currentCount = parseInt($('param-current').value);
+    const maxDeg = parseInt($('param-maxdeg').value);
+    const gamma = parseFloat($('param-gamma').value);
+    topicRadius = parseFloat($('param-topic-radius').value);
+
+    warmNodes = [];
+    lastAddedNodeIdx = -1;
+    temporalEdgeCount = 0;
+    lastLinkAwakeNodes = new Map();
+    historyData = [];
+
+    // 主题锚点：在缩放后的范围内随机
+    topicAnchor = { x: rng() * range * 2 - range, y: rng() * range * 2 - range };
+
+    // 如果簇未生成，先自动生成
+    if (!isClustersGenerated || topicCenters.length === 0) {
+      generateClusters();
+    }
+
+    for (let i = 0; i < totalNodes; i++) {
+      let x, y, cluster, isCurrent;
+      const [g1, g2] = gaussPair(rng);
+
+      if (i < currentCount) {
+        // 窗口节点：围绕主题锚点（缩放已体现在锚点和半径中）
+        x = clamp(topicAnchor.x + g1 * topicRadius * spaceScale, -range, range);
+        y = clamp(topicAnchor.y + g2 * topicRadius * spaceScale, -range, range);
+        cluster = -1;
+        isCurrent = true;
+      } else {
+        // 外部节点：基于语义簇分布（簇中心和 spread 已缩放）
+        let r = rng();
+        let topicIdx = 0;
+        for (let t = 0; t < topicWeights.length; t++) {
+          r -= topicWeights[t];
+          if (r <= 0) { topicIdx = t; break; }
+        }
+        const center = topicCenters[topicIdx];
+        const [g1b, g2b] = gaussPair(rng);
+        x = clamp(center.x + g1b * center.spread, -range, range);
+        y = clamp(center.y + g2b * center.spread, -range, range);
+        cluster = topicIdx;
+        isCurrent = false;
+      }
+
+      const content = generateContent(rng);
+      const tokenCount = Math.floor(content.length * 0.6);
+
+      warmNodes.push({
+        id: 'n' + i,
+        x, y, content, tokenCount,
+        degree: powerLawDegree(rng, 1, maxDeg, gamma),
+        neighbors: [],
+        temporalNeighbors: [],
+        windowId: isCurrent ? 1 : 0,
+        cluster,
+        isCurrent
+      });
+    }
+
+    // 空间边 —— 使用空间哈希（已适配缩放）
+    const rng2 = makeRNG(42);
+    SpatialHash.buildEdges(warmNodes, maxDeg, rng2);
+
+    // 时序边（同窗口节点按顺序连接）
+    const windowNodes = warmNodes.filter(n => n.isCurrent);
+    for (let i = 0; i < windowNodes.length - 1; i++) {
+      const idxA = parseInt(windowNodes[i].id.replace('n', ''));
+      const idxB = parseInt(windowNodes[i+1].id.replace('n', ''));
+      const d = dist2d(warmNodes[idxA], warmNodes[idxB]);
+      const weight = parseFloat($('param-temporal-weight').value) * Math.exp(-d * d / (2 * 0.25 * 0.25 * spaceScale * spaceScale));
+      warmNodes[idxA].temporalNeighbors.push({ idx: idxB, weight });
+      warmNodes[idxB].temporalNeighbors.push({ idx: idxA, weight });
+      temporalEdgeCount++;
+    }
+    if (windowNodes.length > 0) {
+      lastAddedNodeIdx = parseInt(windowNodes[windowNodes.length-1].id.replace('n', ''));
+    }
+
+    round = 0;
+    isDialogOpen = true;
+    currentH = [];
+    currentPeaks = [];
+    linkAwakeNodes.clear();
+    totalRecallTokens = 0;
+    windowContextTokens = 0;
+    totalTokens = 0;
+
+    updateLayerInfo();
+    $('round-num').textContent = '0';
+    $('m-t1').textContent = '—';
+    $('m-spr').textContent = '—';
+    $('m-peaks').textContent = '—';
+    $('m-state').textContent = '—'; $('m-state').style.color = '#4a5a6e';
+    $('m-awake').textContent = '—';
+    $('m-tokens').textContent = '—';
+    $('m-window').textContent = '—';
+    $('m-total').textContent = '—';
+    $('m-scale').textContent = spaceScale.toFixed(2);
+    $('recall-box').innerHTML = '<div style="color:#6b7a8f;">记忆场已初始化（缩放 ' + spaceScale.toFixed(2) + '）</div>';
+    $('retrieve-status').textContent = '就绪';
+    $('detail-box').innerHTML = '';
+    $('context-preview').innerHTML = '<div style="color:#6b7a8f;">—</div>';
+    drawField();
+  }
+
+  function updateLayerInfo() {
+    const currentN = warmNodes.filter(n => n.isCurrent).length;
+    const avgDeg = warmNodes.reduce((s, n) => s + n.neighbors.length, 0) / Math.max(1, warmNodes.length);
+    $('layer-info').textContent =
+      '温层: ' + warmNodes.length +
+      ' | 窗口: ' + currentN +
+      ' | 时序边: ' + temporalEdgeCount +
+      ' | 平均度: ' + avgDeg.toFixed(1) +
+      ' | 缩放: ' + spaceScale.toFixed(2);
+    $('scale-info').textContent = '当前缩放: ' + spaceScale.toFixed(2) + ' | 空间范围: ±' + getSpaceRange().toFixed(2);
+    $('m-scale').textContent = spaceScale.toFixed(2);
+  }
+
+  // ================================================================
+  // 热核扩散 —— 窗口节点隔离
+  // ================================================================
+  function diffuseLayer1(h0, alpha, steps) {
+    const n = warmNodes.length;
+    const deg = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      if (warmNodes[i].isCurrent) { deg[i] = 0; continue; }
+      const s = warmNodes[i].neighbors.reduce((sum, nb) => sum + nb.weight, 0);
+      const t = warmNodes[i].temporalNeighbors.reduce((sum, nb) => sum + nb.weight, 0);
+      deg[i] = s + t;
+    }
+
+    let h = new Float64Array(h0);
+    for (let step = 0; step < steps; step++) {
+      const newH = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        if (warmNodes[i].isCurrent) {
+          newH[i] = 0;
+          continue;
+        }
+        let sum = 0;
+        const di = Math.sqrt(deg[i] + 1e-10);
+        for (const nb of warmNodes[i].neighbors) {
+          if (warmNodes[nb.idx].isCurrent) continue;
+          const dj = Math.sqrt(deg[nb.idx] + 1e-10);
+          sum += (nb.weight / (di * dj)) * h[nb.idx];
+        }
+        for (const nb of warmNodes[i].temporalNeighbors) {
+          if (warmNodes[nb.idx].isCurrent) continue;
+          const dj = Math.sqrt(deg[nb.idx] + 1e-10);
+          sum += (nb.weight / (di * dj)) * h[nb.idx];
+        }
+        newH[i] = h[i] - alpha * (h[i] - sum);
+        if (newH[i] < 0) newH[i] = 0;
+      }
+      h = newH;
+    }
+    return h;
+  }
+
+  // ================================================================
+  // 峰检测 —— 跳过当前窗口节点
+  // ================================================================
+  function detectPeaks(h) {
+    const n = warmNodes.length;
+    const totalE = h.reduce((a, b) => a + b, 0);
+    if (totalE < 1e-6) {
+      return { t1: 0, peaks: 0, peakIdxs: [], peakEnergies: [], totalEnergy: 0, secondPeakRatio: 0 };
+    }
+
+    const peaks = [];
+    for (let i = 0; i < n; i++) {
+      if (warmNodes[i].isCurrent) continue;
+      if (h[i] < 0.02) continue;
+      let isP = true;
+      for (const nb of warmNodes[i].neighbors) {
+        if (warmNodes[nb.idx].isCurrent) continue;
+        if (h[nb.idx] > h[i]) { isP = false; break; }
+      }
+      for (const nb of warmNodes[i].temporalNeighbors) {
+        if (warmNodes[nb.idx].isCurrent) continue;
+        if (h[nb.idx] > h[i]) { isP = false; break; }
+      }
+      if (isP) peaks.push(i);
+    }
+
+    const clusters = [];
+    const used = new Set();
+    for (const p of peaks) {
+      if (used.has(p)) continue;
+      const clus = [p]; used.add(p);
+      for (const q of peaks) {
+        if (used.has(q)) continue;
+        if (dist2d(warmNodes[p], warmNodes[q]) < 0.25 * spaceScale) { clus.push(q); used.add(q); }
+      }
+      let rep = p, mv = h[p];
+      for (const c of clus) if (h[c] > mv) { mv = h[c]; rep = c; }
+      clusters.push(rep);
+    }
+    let merged = true;
+    while (merged) {
+      merged = false;
+      for (let i = 0; i < clusters.length; i++) {
+        for (let j = i + 1; j < clusters.length; j++) {
+          if (dist2d(warmNodes[clusters[i]], warmNodes[clusters[j]]) < 0.25 * spaceScale) {
+            if (h[clusters[i]] < h[clusters[j]]) clusters[i] = clusters[j];
+            clusters.splice(j, 1);
+            merged = true; break;
+          }
+        }
+        if (merged) break;
+      }
+    }
+
+    const cEnergy = new Float64Array(clusters.length);
+    for (let i = 0; i < n; i++) {
+      if (warmNodes[i].isCurrent) continue;
+      if (h[i] < 1e-4) continue;
+      let best = 0, bd = Infinity;
+      for (let ci = 0; ci < clusters.length; ci++) {
+        const d = dist2d(warmNodes[i], warmNodes[clusters[ci]]);
+        if (d < bd) { bd = d; best = ci; }
+      }
+      cEnergy[best] += h[i];
+    }
+    const filtered = [];
+    for (let ci = 0; ci < clusters.length; ci++) {
+      if (cEnergy[ci] / totalE >= 0.05) filtered.push({ idx: clusters[ci], energy: cEnergy[ci] });
+    }
+    filtered.sort((a, b) => b.energy - a.energy);
+
+    const t1 = filtered.length > 0 ? filtered[0].energy / totalE : 0;
+    const secondPeakRatio = filtered.length >= 2 ? filtered[1].energy / filtered[0].energy : 0;
+
+    return {
+      t1, peaks: filtered.length, peakIdxs: filtered.map(c => c.idx),
+      peakEnergies: filtered.map(c => c.energy), totalEnergy: totalE, secondPeakRatio
+    };
+  }
+
+  // ================================================================
+  // 链路传播 —— 窗口节点只中继不记录
+  // ================================================================
+  function linkPropagation(startIdx, maxDepth, decay, minEnergy) {
+    const visited = new Set();
+    const queue = [{ idx: startIdx, depth: 0, energy: 1.0 }];
+    const awake = new Map();
+
+    while (queue.length > 0) {
+      const { idx, depth, energy } = queue.shift();
+      if (depth > maxDepth || energy < minEnergy) continue;
+      if (visited.has(idx)) continue;
+      visited.add(idx);
+
+      if (!warmNodes[idx].isCurrent) {
+        const prev = awake.get(idx) || 0;
+        if (energy > prev) awake.set(idx, energy);
+      }
+
+      for (const nb of warmNodes[idx].neighbors) {
+        if (!visited.has(nb.idx)) {
+          queue.push({ idx: nb.idx, depth: depth + 1, energy: energy * decay });
+        }
+      }
+      for (const nb of warmNodes[idx].temporalNeighbors) {
+        if (!visited.has(nb.idx)) {
+          queue.push({ idx: nb.idx, depth: depth + 1, energy: energy * decay });
+        }
+      }
+    }
+
+    awake.delete(startIdx);
+    return awake;
+  }
+
+  // ================================================================
+  // Hebbian 塑形
+  // ================================================================
+  function hebbianPlasticity(h, eta, minAct) {
+    const activated = [];
+    for (let i = 0; i < warmNodes.length; i++) {
+      if (h[i] > minAct) activated.push(i);
+    }
+    if (activated.length < 2) return;
+
+    for (let a = 0; a < activated.length; a++) {
+      for (let b = a + 1; b < activated.length; b++) {
+        const i = activated[a], j = activated[b];
+        if (warmNodes[i].windowId !== warmNodes[j].windowId) continue;
+
+        let edge_i = null;
+        for (const nb of warmNodes[i].neighbors) {
+          if (nb.idx === j) { edge_i = nb; break; }
+        }
+        if (edge_i) {
+          const delta = eta * h[i] * h[j];
+          edge_i.weight = Math.min(1.0, edge_i.weight + delta);
+          for (const nb of warmNodes[j].neighbors) {
+            if (nb.idx === i) { nb.weight = edge_i.weight; break; }
+          }
+        }
+
+        let tEdge_i = null;
+        for (const nb of warmNodes[i].temporalNeighbors) {
+          if (nb.idx === j) { tEdge_i = nb; break; }
+        }
+        if (tEdge_i) {
+          const delta = eta * h[i] * h[j];
+          tEdge_i.weight = Math.min(1.0, tEdge_i.weight + delta);
+          for (const nb of warmNodes[j].temporalNeighbors) {
+            if (nb.idx === i) { nb.weight = tEdge_i.weight; break; }
+          }
+        }
+      }
+    }
+  }
+
+  // ================================================================
+  // generateQuery —— 主题约束 + 弹性空间适配
+  // ================================================================
+  function generateQuery() {
+    const qType = $('query-type').value;
+    const range = getSpaceRange();
+
+    if (qType === 'jump') {
+      queryX = Math.random() * range * 2 - range;
+      queryY = Math.random() * range * 2 - range;
+      isJump = true;
+      return;
+    }
+
+    if (qType === 'vague') {
+      queryX = clamp(topicAnchor.x + (Math.random()-0.5)*0.6*spaceScale, -range, range);
+      queryY = clamp(topicAnchor.y + (Math.random()-0.5)*0.6*spaceScale, -range, range);
+      isJump = false;
+      return;
+    }
+
+    isJump = false;
+    const r = Math.random();
+    const clusterProb = parseFloat($('param-cluster-prob').value);
+
+    if (r < clusterProb) {
+      const clusters = getExternalClusterCenters();
+      if (clusters.length > 0) {
+        const sorted = clusters
+          .map(c => ({...c, dist: dist2d(c, topicAnchor)}))
+          .sort((a, b) => a.dist - b.dist);
+        const target = sorted[Math.floor(Math.random() * Math.min(3, sorted.length))];
+        queryX = clamp(target.x + (Math.random()-0.5)*0.25*spaceScale, -range, range);
+        queryY = clamp(target.y + (Math.random()-0.5)*0.25*spaceScale, -range, range);
+      } else {
+        queryX = clamp(topicAnchor.x + (Math.random()-0.5)*0.2*spaceScale, -range, range);
+        queryY = clamp(topicAnchor.y + (Math.random()-0.5)*0.2*spaceScale, -range, range);
+      }
+    } else {
+      queryX = clamp(topicAnchor.x + (Math.random()-0.5)*0.2*spaceScale, -range, range);
+      queryY = clamp(topicAnchor.y + (Math.random()-0.5)*0.2*spaceScale, -range, range);
+    }
+  }
+
+  // ================================================================
+  // addCurrentNode —— 弹性空间适配
+  // ================================================================
+  function addCurrentNode() {
+    if (!isDialogOpen) {
+      $('retrieve-status').textContent = '请先新建对话';
+      return;
+    }
+
+    const rng = makeRNG(Date.now() % 100000);
+    const temporalOn = $('param-temporal-on').checked;
+    const bridgeCount = parseInt($('param-bridge').value);
+    const sameWindowCount = parseInt($('param-same-window').value);
+    const temporalWeight = parseFloat($('param-temporal-weight').value);
+    const maxDeg = parseInt($('param-maxdeg').value);
+    const gamma = parseFloat($('param-gamma').value);
+    const range = getSpaceRange();
+
+    const [g1, g2] = gaussPair(rng);
+    const x = clamp(topicAnchor.x + g1 * 0.05 * spaceScale, -range, range);
+    const y = clamp(topicAnchor.y + g2 * 0.05 * spaceScale, -range, range);
+
+    const content = generateContent(rng);
+    const tokenCount = Math.floor(content.length * 0.6);
+    const newIdx = warmNodes.length;
+
+    const newNode = {
+      id: 'n' + newIdx,
+      x, y, content, tokenCount,
+      degree: powerLawDegree(rng, 1, maxDeg, gamma),
+      neighbors: [],
+      temporalNeighbors: [],
+      windowId: 1,
+      cluster: -1,
+      isCurrent: true
+    };
+
+    if (bridgeCount > 0 && lastLinkAwakeNodes.size > 0) {
+      const candidates = [...lastLinkAwakeNodes.entries()]
+        .filter(([idx, energy]) => !warmNodes[idx].isCurrent && energy > 0.15)
+        .sort((a, b) => b[1] - a[1]);
+      for (let k = 0; k < Math.min(bridgeCount, candidates.length); k++) {
+        const [idx, energy] = candidates[k];
+        const d = dist2d(newNode, warmNodes[idx]);
+        const sim = Math.exp(-d * d / (2 * 0.25 * 0.25 * spaceScale * spaceScale)) * (0.5 + 0.5 * energy);
+        newNode.neighbors.push({ idx, weight: sim });
+        warmNodes[idx].neighbors.push({ idx: newIdx, weight: sim });
+      }
+    }
+
+    if (sameWindowCount > 0) {
+      const sameWindow = [];
+      for (let i = 0; i < warmNodes.length; i++) {
+        if (warmNodes[i].isCurrent) {
+          sameWindow.push({ idx: i, d: dist2d(newNode, warmNodes[i]) });
+        }
+      }
+      sameWindow.sort((a, b) => a.d - b.d);
+      for (let k = 0; k < Math.min(sameWindowCount, sameWindow.length); k++) {
+        const { idx, d } = sameWindow[k];
+        const sim = Math.exp(-d * d / (2 * 0.25 * 0.25 * spaceScale * spaceScale));
+        let exists = false;
+        for (const nb of newNode.neighbors) if (nb.idx === idx) { exists = true; break; }
+        if (!exists) {
+          newNode.neighbors.push({ idx, weight: sim });
+          warmNodes[idx].neighbors.push({ idx: newIdx, weight: sim });
+        }
+      }
+    }
+
+    if (temporalOn && lastAddedNodeIdx >= 0 && lastAddedNodeIdx < warmNodes.length) {
+      const d = dist2d(newNode, warmNodes[lastAddedNodeIdx]);
+      const weight = temporalWeight * Math.exp(-d * d / (2 * 0.25 * 0.25 * spaceScale * spaceScale));
+      newNode.temporalNeighbors.push({ idx: lastAddedNodeIdx, weight });
+      warmNodes[lastAddedNodeIdx].temporalNeighbors.push({ idx: newIdx, weight });
+      temporalEdgeCount++;
+    }
+
+    while (newNode.neighbors.length < Math.min(3, newNode.degree)) {
+      let best = -1, bd = Infinity;
+      for (let i = 0; i < warmNodes.length; i++) {
+        if (i === newIdx) continue;
+        let exists = false;
+        for (const nb of newNode.neighbors) if (nb.idx === i) { exists = true; break; }
+        if (exists) continue;
+        const d = dist2d(newNode, warmNodes[i]);
+        if (d < bd) { bd = d; best = i; }
+      }
+      if (best >= 0) {
+        const sim = Math.exp(-bd * bd / (2 * 0.25 * 0.25 * spaceScale * spaceScale));
+        newNode.neighbors.push({ idx: best, weight: sim });
+        warmNodes[best].neighbors.push({ idx: newIdx, weight: sim });
+      } else break;
+    }
+
+    warmNodes.push(newNode);
+    lastAddedNodeIdx = newIdx;
+
+    // 插入空间哈希
+    SpatialHash.insert(newNode, newIdx);
+
+    updateLayerInfo();
+    drawField();
+    $('retrieve-status').textContent = '✅ 新增节点 ' + newNode.id + ' (锚定于主题 ' + topicAnchor.x.toFixed(2)+','+topicAnchor.y.toFixed(2)+ ')';
+    $('detail-box').innerHTML += '<div style="color:#1a7a4a;">📌 新增节点锚定于当前主题</div>';
+  }
+
+  // ================================================================
+  // doRetrieve
+  // ================================================================
+  function doRetrieve() {
+    const steps = parseInt($('param-steps').value);
+    const alpha = parseFloat($('param-alpha').value);
+    const depth = parseInt($('param-depth').value);
+    const decay = parseFloat($('param-decay').value);
+    const t1Certain = parseFloat($('param-t1-certain').value) || 0.75;
+    const t1Question = parseFloat($('param-t1-question').value) || 0.60;
+    const sprThreshold = parseFloat($('param-spr').value) || 0.50;
+    const hebbianOn = $('param-hebbian-on').checked;
+    const multiPeakOn = $('param-multi-peak').checked;
+
+    const sigma = parseFloat($('param-sigma').value) || 0.25;
+    const thresh = parseFloat($('param-thresh').value) || 0.15;
+    const range = getSpaceRange();
+
+    generateQuery();
+
+    const n = warmNodes.length;
+    const h0 = new Float64Array(n);
+    const s2 = 2 * sigma * sigma;
+    for (let i = 0; i < n; i++) {
+      if (warmNodes[i].isCurrent) continue;
+      const dx = warmNodes[i].x - queryX;
+      const dy = warmNodes[i].y - queryY;
+      const v = Math.exp(-(dx*dx + dy*dy) / s2);
+      if (v > thresh) h0[i] = v;
+    }
+
+    const h = diffuseLayer1(h0, alpha, steps);
+    const res1 = detectPeaks(h);
+
+    currentH = h;
+    currentPeaks = res1.peakIdxs;
+    currentT1 = res1.t1;
+    currentSPR = res1.secondPeakRatio;
+
+    let state = '—', stateColor = '#4a5a6e';
+    if (res1.t1 > t1Certain) { state = '确定'; stateColor = '#1a7a4a'; }
+    else if (res1.t1 < t1Question) { state = '追问'; stateColor = '#e5484d'; }
+    else if (res1.secondPeakRatio > sprThreshold) { state = '追问'; stateColor = '#e5484d'; }
+    else { state = '模糊'; stateColor = '#d29922'; }
+    currentState = state;
+
+    linkAwakeNodes.clear();
+    totalRecallTokens = 0;
+
+    if (res1.peakIdxs.length > 0 && state !== '追问') {
+      const minEnergy = 0.05;
+      const combined = new Map();
+
+      if (multiPeakOn && res1.peakIdxs.length > 1) {
+        for (let p = 0; p < res1.peakIdxs.length; p++) {
+          if (res1.peakEnergies[p] / res1.totalEnergy < 0.05) continue;
+          const sub = linkPropagation(res1.peakIdxs[p], depth, decay, minEnergy);
+          for (const [idx, e] of sub) {
+            const prev = combined.get(idx) || 0;
+            combined.set(idx, Math.max(prev, e));
+          }
+        }
+      } else if (res1.peakIdxs.length > 0) {
+        const sub = linkPropagation(res1.peakIdxs[0], depth, decay, minEnergy);
+        for (const [idx, e] of sub) combined.set(idx, e);
+      }
+      linkAwakeNodes = combined;
+
+      let tokens = 0;
+      for (const [idx, energy] of combined) {
+        if (energy < 0.15) continue;
+        if (warmNodes[idx].isCurrent) continue;
+        tokens += warmNodes[idx].tokenCount;
+      }
+      totalRecallTokens = tokens;
+    }
+
+    lastLinkAwakeNodes = new Map(linkAwakeNodes);
+
+    if (hebbianOn) {
+      const eta = parseFloat($('param-hebbian-eta').value) || 0.01;
+      const minAct = parseFloat($('param-hebbian-min').value) || 0.15;
+      hebbianPlasticity(h, eta, minAct);
+    }
+
+    windowContextTokens = 0;
+    for (const n of warmNodes) {
+      if (n.isCurrent) windowContextTokens += n.tokenCount;
+    }
+    totalTokens = windowContextTokens + totalRecallTokens;
+
+    // 主题漂移（适配缩放）
+    const driftRate = 0.03 * spaceScale;
+    topicAnchor.x = clamp(topicAnchor.x + (Math.random()-0.5)*driftRate, -range, range);
+    topicAnchor.y = clamp(topicAnchor.y + (Math.random()-0.5)*driftRate, -range, range);
+
+    historyData.push({
+      round: round,
+      totalNodes: warmNodes.length,
+      currentWindow: getCurrentNodes().length,
+      t1: res1.t1,
+      spr: res1.secondPeakRatio,
+      peaks: res1.peaks,
+      state: state,
+      awakeNodes: linkAwakeNodes.size,
+      recallTokens: totalRecallTokens,
+      windowTokens: windowContextTokens,
+      totalTokens: totalTokens,
+      queryX: queryX,
+      queryY: queryY,
+      isJump: isJump,
+      temporalEdges: temporalEdgeCount,
+      topicX: topicAnchor.x,
+      topicY: topicAnchor.y,
+      sigma: sigma,
+      thresh: thresh,
+      clusterCount: topicCenters.length,
+      spaceScale: spaceScale
+    });
+
+    $('m-t1').textContent = res1.t1.toFixed(3);
+    $('m-spr').textContent = res1.secondPeakRatio > 0 ? res1.secondPeakRatio.toFixed(2) : '—';
+    $('m-peaks').textContent = res1.peaks;
+    const st = $('m-state');
+    st.textContent = state; st.style.color = stateColor;
+    $('m-awake').textContent = linkAwakeNodes.size;
+    $('m-tokens').textContent = totalRecallTokens > 0 ? totalRecallTokens.toLocaleString() : '—';
+    $('m-window').textContent = windowContextTokens > 0 ? windowContextTokens.toLocaleString() : '—';
+    $('m-total').textContent = totalTokens > 0 ? totalTokens.toLocaleString() : '—';
+    $('m-scale').textContent = spaceScale.toFixed(2);
+
+    let detailHTML = '';
+    if (isJump) detailHTML += '<div style="color:#e5484d;">⚠️ 跳脱</div>';
+    detailHTML += '<div>主峰: ' + (res1.peakIdxs.length > 0 ? warmNodes[res1.peakIdxs[0]].id : '无') + '</div>';
+    detailHTML += '<div>次峰比: ' + (res1.secondPeakRatio > 0 ? res1.secondPeakRatio.toFixed(2) : '—') + '</div>';
+    detailHTML += '<div>查询落点: (' + queryX.toFixed(2)+', '+queryY.toFixed(2)+')</div>';
+    detailHTML += '<div>主题锚点: (' + topicAnchor.x.toFixed(2)+', '+topicAnchor.y.toFixed(2)+')</div>';
+    detailHTML += '<div>空间缩放: ' + spaceScale.toFixed(2)+' | 范围: ±'+range.toFixed(2)+'</div>';
+    detailHTML += '<div>注入参数: σ=' + sigma.toFixed(2)+', thresh='+thresh.toFixed(2)+' | 簇: '+topicCenters.length+'</div>';
+    if (hebbianOn) detailHTML += '<div style="color:#1a7a4a;">Hebbian 已应用</div>';
+    $('detail-box').innerHTML = detailHTML;
+
+    $('retrieve-status').textContent = '轮次 ' + round;
+
+    updateRecallBox();
+    updateContextPreview();
+    drawField();
+  }
+
+  function updateRecallBox() {
+    const box = $('recall-box');
+    if (!isDialogOpen) { box.innerHTML = '<div style="color:#6b7a8f;">—</div>'; return; }
+    if (currentState === '追问') {
+      box.innerHTML = '<div style="color:#e5484d;">【追问】检测到歧义</div>';
+      return;
+    }
+    if (linkAwakeNodes.size === 0) {
+      box.innerHTML = '<div style="color:#6b7a8f;">未唤醒关联记忆</div>';
+      return;
+    }
+
+    const sorted = [...linkAwakeNodes.entries()]
+      .filter(([idx]) => !warmNodes[idx].isCurrent)
+      .sort((a, b) => b[1] - a[1]);
+
+    if (sorted.length === 0) {
+      box.innerHTML = '<div style="color:#6b7a8f;">仅有窗口节点被唤醒</div>';
+      return;
+    }
+
+    let html = '<div style="margin-bottom:6px;color:#1f2a3a;">外部唤醒 ' + sorted.length + ' 个节点</div>';
+    let count = 0;
+    for (const [idx, energy] of sorted) {
+      if (energy < 0.15) continue;
+      const node = warmNodes[idx];
+      html += '<div style="padding:4px;background:#fafbfc;border-radius:4px;margin-bottom:4px;">' +
+        '<span class="node-chip">' + node.id + '</span>' +
+        ' 能量:' + energy.toFixed(2) + ' Token:' + node.tokenCount +
+        '<div style="color:#1f2a3a;">' + node.content.substring(0, 55) + '...</div></div>';
+      count++;
+      if (count >= 5) { html += '<div style="color:#6b7a8f;">...还有 ' + (sorted.length-5) + ' 个</div>'; break; }
+    }
+    box.innerHTML = html;
+  }
+
+  function updateContextPreview() {
+    const box = $('context-preview');
+    if (!isDialogOpen) { box.innerHTML = '<div style="color:#6b7a8f;">—</div>'; return; }
+
+    let html = '<div style="color:#6b7a8f;">[系统提示词]</div>';
+
+    const current = getCurrentNodes().slice(-4);
+    if (current.length > 0) {
+      html += '<div style="color:#1a7a4a;margin:4px 0;">【窗口历史】</div>';
+      for (const n of current) {
+        html += '<div><span class="node-chip current">' + n.id + '</span> ' + n.content.substring(0, 35) + '...</div>';
+      }
+    }
+
+    html += '<div style="color:#6b7a8f;margin:4px 0;">【Token 消耗】窗口: ' + windowContextTokens + ' + 回忆: ' + totalRecallTokens + ' = 总计: ' + totalTokens + '</div>';
+
+    html += '<div style="color:#8b5cf6;margin:4px 0;">【空间缩放】' + spaceScale.toFixed(2) + ' | 范围: ±' + getSpaceRange().toFixed(2) + '</div>';
+
+    html += '<div style="color:#d29922;margin:4px 0;">【当前输入】</div>';
+    const qType = $('query-type').value;
+    html += '<div>👤 ' + (qType === 'current' ? '主题锚定查询' : qType === 'jump' ? '跳脱话题' : '模糊查询') + '</div>';
+
+    if (currentState === '确定' && linkAwakeNodes.size > 0) {
+      const top = [...linkAwakeNodes.entries()]
+        .filter(e => e[1] > 0.15 && !warmNodes[e[0]].isCurrent)
+        .sort((a,b) => b[1]-a[1]).slice(0, 3);
+      if (top.length > 0) {
+        html += '<div style="color:#2d7aff;margin:4px 0;">【回忆】（~' + totalRecallTokens + ' tokens）</div>';
+        for (const [idx, e] of top) {
+          html += '<div><span class="node-chip">' + warmNodes[idx].id + '</span> ' + warmNodes[idx].content.substring(0, 30) + '...</div>';
+        }
+      }
+    }
+    box.innerHTML = html;
+  }
+
+  // ================================================================
+  // drawField —— 弹性空间自适应
+  // ================================================================
+  function drawField() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const W = Math.max(300, rect.width - 2);
+    const H = 480;
+    canvas.width = W; canvas.height = H;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    if (warmNodes.length === 0) {
+      ctx.fillStyle = '#6b7a8f';
+      ctx.font = '13px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('点击「新建对话」', W/2, H/2);
+      return;
+    }
+
+    const range = getSpaceRange();
+    const displayRange = Math.max(range, 0.8);
+    const pad = 36;
+    const sx = (W - pad * 2) / (2.2 * displayRange / 0.8);
+    const sy = (H - pad * 2) / (2.2 * displayRange / 0.8);
+    const cx = W / 2, cy = H / 2;
+    const mx = x => cx + x * sx;
+    const my = y => cy + y * sy;
+
+    const n = warmNodes.length;
+    const maxH = Math.max(1e-6, ...currentH);
+    const peakSet = new Set(currentPeaks);
+
+    const activeSet = new Set();
+    for (let i = 0; i < n; i++) {
+      if (currentH[i] / maxH > 0.05) activeSet.add(i);
+      if (linkAwakeNodes.has(i)) activeSet.add(i);
+    }
+    for (const idx of activeSet) {
+      for (const nb of warmNodes[idx].neighbors) activeSet.add(nb.idx);
+      for (const nb of warmNodes[idx].temporalNeighbors) activeSet.add(nb.idx);
+    }
+
+    // 空间边
+    for (const i of activeSet) {
+      for (const nb of warmNodes[i].neighbors) {
+        if (i >= nb.idx) continue;
+        const a1 = currentH[i] / maxH;
+        const a2 = currentH[nb.idx] / maxH;
+        const a = (a1 + a2) / 2;
+        if (a < 0.03 && !linkAwakeNodes.has(i) && !linkAwakeNodes.has(nb.idx)) continue;
+        ctx.beginPath();
+        ctx.moveTo(mx(warmNodes[i].x), my(warmNodes[i].y));
+        ctx.lineTo(mx(warmNodes[nb.idx].x), my(warmNodes[nb.idx].y));
+        const bright = linkAwakeNodes.has(i) || linkAwakeNodes.has(nb.idx) ? 0.6 : a * 0.3 + 0.1;
+        ctx.strokeStyle = 'rgba(45, 122, 255, ' + bright.toFixed(3) + ')';
+        ctx.lineWidth = (linkAwakeNodes.has(i) || linkAwakeNodes.has(nb.idx)) ? 2.0 : 0.8;
+        ctx.stroke();
+      }
+    }
+
+    // 时序边
+    const temporalOn = $('param-temporal-on').checked;
+    if (temporalOn) {
+      for (let i = 0; i < n; i++) {
+        for (const nb of warmNodes[i].temporalNeighbors) {
+          if (i >= nb.idx) continue;
+          const a1 = currentH[i] / maxH;
+          const a2 = currentH[nb.idx] / maxH;
+          const a = (a1 + a2) / 2;
+          if (a < 0.02 && !linkAwakeNodes.has(i) && !linkAwakeNodes.has(nb.idx)) continue;
+          ctx.setLineDash([5, 5]);
+          ctx.beginPath();
+          ctx.moveTo(mx(warmNodes[i].x), my(warmNodes[i].y));
+          ctx.lineTo(mx(warmNodes[nb.idx].x), my(warmNodes[nb.idx].y));
+          const bright = linkAwakeNodes.has(i) || linkAwakeNodes.has(nb.idx) ? 0.8 : 0.35;
+          ctx.strokeStyle = 'rgba(26, 122, 74, ' + bright.toFixed(3) + ')';
+          ctx.lineWidth = (linkAwakeNodes.has(i) || linkAwakeNodes.has(nb.idx)) ? 2.5 : 1.0;
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+    }
+
+    // 查询点
+    if (isDialogOpen && currentH.length > 0) {
+      ctx.beginPath();
+      ctx.arc(mx(queryX), my(queryY), 7, 0, Math.PI * 2);
+      ctx.fillStyle = isJump ? '#e5484d' : '#2d7aff';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(mx(queryX), my(queryY), 16, 0, Math.PI * 2);
+      ctx.strokeStyle = isJump ? 'rgba(229,72,77,0.2)' : 'rgba(45,122,255,0.2)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // 主题锚点
+    ctx.beginPath();
+    ctx.arc(mx(topicAnchor.x), my(topicAnchor.y), 5, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(139, 92, 246, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(mx(topicAnchor.x), my(topicAnchor.y), 12, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(139, 92, 246, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 语义簇中心
+    if (isClustersGenerated && topicCenters.length > 0) {
+      for (const center of topicCenters) {
+        ctx.beginPath();
+        ctx.arc(mx(center.x), my(center.y), 3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(139, 92, 246, 0.3)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(139, 92, 246, 0.5)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+
+    // 节点
+    for (let i = 0; i < n; i++) {
+      const px = mx(warmNodes[i].x);
+      const py = my(warmNodes[i].y);
+      const a = currentH[i] / maxH;
+      const isLink = linkAwakeNodes.has(i);
+      const linkEnergy = isLink ? linkAwakeNodes.get(i) : 0;
+      const isPeak = peakSet.has(i);
+
+      const r = 3 + a * 7 + (isLink ? linkEnergy * 3 : 0);
+
+      if (a > 0.03 || isLink) {
+        const glowR = r * (isLink ? 4 : 3);
+        const glow = ctx.createRadialGradient(px, py, 0, px, py, glowR);
+        if (isLink) {
+          glow.addColorStop(0, 'rgba(240, 136, 62, ' + (linkEnergy * 0.2).toFixed(3) + ')');
+        } else {
+          glow.addColorStop(0, 'rgba(45, 122, 255, ' + (a * 0.12).toFixed(3) + ')');
+        }
+        glow.addColorStop(1, 'rgba(45, 122, 255, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(px, py, glowR, 0, Math.PI * 2); ctx.fill();
+      }
+
+      ctx.beginPath(); ctx.arc(px, py, Math.max(3, Math.min(r, 12)), 0, Math.PI * 2);
+      if (isPeak) {
+        ctx.fillStyle = '#e5484d';
+      } else if (isLink) {
+        ctx.fillStyle = '#f0883e';
+      } else if (warmNodes[i].isCurrent) {
+        ctx.fillStyle = a > 0.1 ? '#1a7a4a' : '#23a050';
+      } else if (a > 0.1) {
+        ctx.fillStyle = '#8b9aab';
+      } else {
+        ctx.fillStyle = '#d0d7de';
+      }
+      ctx.fill();
+
+      if (a > 0.15 || isLink) {
+        ctx.strokeStyle = 'rgba(31, 42, 58, 0.15)';
+        ctx.lineWidth = 1; ctx.stroke();
+      }
+    }
+
+    ctx.fillStyle = '#4a5a6e';
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText('节点 ' + n + ' | 时序边 ' + temporalEdgeCount + ' | 缩放 ' + spaceScale.toFixed(2), 12, 22);
+  }
+
+  // ================================================================
+  // 导出 CSV
+  // ================================================================
+  function exportCSV() {
+    if (historyData.length === 0) {
+      alert('暂无数据，请先运行几轮「用户输入」');
+      return;
+    }
+    const headers = ['round', 'totalNodes', 'currentWindow', 't1', 'spr', 'peaks', 'state', 'awakeNodes', 'recallTokens', 'windowTokens', 'totalTokens', 'queryX', 'queryY', 'isJump', 'temporalEdges', 'topicX', 'topicY', 'sigma', 'thresh', 'clusterCount', 'spaceScale'];
+    let csv = headers.join(',') + '\n';
+    for (const row of historyData) {
+      csv += headers.map(h => row[h] !== undefined ? row[h] : '').join(',') + '\n';
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'memory_field_data_v54_elastic.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function resetParams() {
+    const rangeIds = [
+      'param-nodes', 'param-current', 'param-maxdeg', 'param-gamma',
+      'param-steps', 'param-alpha', 'param-depth', 'param-decay', 'param-jump',
+      'param-sigma', 'param-thresh',
+      'param-t1-certain', 'param-t1-question', 'param-spr',
+      'param-hebbian-eta', 'param-hebbian-min',
+      'param-topic-radius', 'param-cluster-prob', 'param-temporal-weight',
+      'param-bridge', 'param-same-window',
+      'param-cluster-count', 'param-cluster-skew',
+      'param-base-nodes', 'param-manual-scale'
+    ];
+    for (const id of rangeIds) {
+      const el = $(id);
+      if (el) {
+        const defaultVal = el.getAttribute('value') || el.value;
+        el.value = defaultVal;
+        el.dispatchEvent(new Event('input'));
+      }
+    }
+    const checkIds = ['param-hebbian-on', 'param-multi-peak', 'param-temporal-on', 'param-anchor-on', 'param-auto-scale'];
+    for (const id of checkIds) {
+      const el = $(id);
+      if (el) el.checked = true;
+    }
+    $('query-type').value = 'current';
+    $('retrieve-status').textContent = '参数已重置';
+  }
+
+  function newDialog() { initField(); }
+  function userInput() {
+    if (!isDialogOpen) { $('retrieve-status').textContent = '请先新建对话'; return; }
+    round++;
+    $('round-num').textContent = round;
+    doRetrieve();
+  }
+
+  function resetAll() {
+    warmNodes = [];
+    round = 0; isDialogOpen = false;
+    currentH = []; currentPeaks = [];
+    linkAwakeNodes.clear(); lastLinkAwakeNodes.clear();
+    totalRecallTokens = 0; lastAddedNodeIdx = -1; temporalEdgeCount = 0;
+    windowContextTokens = 0; totalTokens = 0;
+    topicAnchor = { x: 0, y: 0 };
+    historyData = [];
+    // 保留簇数据
+    $('round-num').textContent = '0';
+    $('m-t1').textContent = '—';
+    $('m-spr').textContent = '—';
+    $('m-peaks').textContent = '—';
+    $('m-state').textContent = '—'; $('m-state').style.color = '#4a5a6e';
+    $('m-awake').textContent = '—';
+    $('m-tokens').textContent = '—';
+    $('m-window').textContent = '—';
+    $('m-total').textContent = '—';
+    $('m-scale').textContent = '—';
+    $('recall-box').innerHTML = '<div style="color:#6b7a8f;">已重置</div>';
+    $('retrieve-status').textContent = '已重置';
+    $('detail-box').innerHTML = '';
+    $('context-preview').innerHTML = '<div style="color:#6b7a8f;">—</div>';
+    $('layer-info').textContent = '温层: 0 | 窗口: 0 | 时序边: 0 | 缩放: 1.00';
+    drawField();
+  }
+
+  // ===== 事件绑定 =====
+  $('btn-new').addEventListener('click', newDialog);
+  $('btn-user').addEventListener('click', userInput);
+  $('btn-add-node').addEventListener('click', addCurrentNode);
+  $('btn-reset').addEventListener('click', resetAll);
+  $('btn-refresh').addEventListener('click', () => { if (isDialogOpen) doRetrieve(); });
+  $('btn-export-csv').addEventListener('click', exportCSV);
+  $('btn-reset-params').addEventListener('click', resetParams);
+  $('btn-gen-clusters').addEventListener('click', generateClusters);
+  $('btn-random-clusters').addEventListener('click', randomizeClusters);
+
+  // 弹性空间参数更新
+  $('param-auto-scale').addEventListener('change', () => {
+    if (isDialogOpen) {
+      // 如果对话已开启，需要重新初始化才能生效
+      $('retrieve-status').textContent = '⚠️ 空间模式已更改，请点击「新建对话」应用';
+    }
+  });
+
+  $('param-base-nodes').addEventListener('input', () => {
+    $('val-base-nodes').textContent = $('param-base-nodes').value;
+    if (isDialogOpen && $('param-auto-scale').checked) {
+      $('retrieve-status').textContent = '⚠️ 基准节点数已更改，请点击「新建对话」应用';
+    }
+  });
+
+  $('param-manual-scale').addEventListener('input', () => {
+    $('val-manual-scale').textContent = parseFloat($('param-manual-scale').value).toFixed(2);
+    if (isDialogOpen && !$('param-auto-scale').checked) {
+      $('retrieve-status').textContent = '⚠️ 手动缩放已更改，请点击「新建对话」应用';
+    }
+  });
+
+  // 滑块值显示
+  const sliders = [
+    ['param-nodes','val-nodes', v=>parseInt(v).toLocaleString()],
+    ['param-current','val-current', v=>v],
+    ['param-maxdeg','val-maxdeg', v=>v],
+    ['param-gamma','val-gamma', v=>parseFloat(v).toFixed(1)],
+    ['param-steps','val-steps', v=>v],
+    ['param-alpha','val-alpha', v=>parseFloat(v).toFixed(2)],
+    ['param-depth','val-depth', v=>v],
+    ['param-decay','val-decay', v=>parseFloat(v).toFixed(2)],
+    ['param-jump','val-jump', v=>Math.round(parseFloat(v)*100)+'%'],
+    ['param-sigma','val-sigma', v=>parseFloat(v).toFixed(2)],
+    ['param-thresh','val-thresh', v=>parseFloat(v).toFixed(2)],
+    ['param-t1-certain','val-t1-certain', v=>parseFloat(v).toFixed(2)],
+    ['param-t1-question','val-t1-question', v=>parseFloat(v).toFixed(2)],
+    ['param-spr','val-spr', v=>parseFloat(v).toFixed(2)],
+    ['param-hebbian-eta','val-hebbian-eta', v=>parseFloat(v).toFixed(3)],
+    ['param-hebbian-min','val-hebbian-min', v=>parseFloat(v).toFixed(2)],
+    ['param-topic-radius','val-topic-radius', v=>parseFloat(v).toFixed(2)],
+    ['param-cluster-prob','val-cluster-prob', v=>Math.round(parseFloat(v)*100)+'%'],
+    ['param-temporal-weight','val-temporal-weight', v=>parseFloat(v).toFixed(2)],
+    ['param-bridge','val-bridge', v=>v],
+    ['param-same-window','val-same-window', v=>v],
+    ['param-cluster-count','val-cluster-count', v=>v],
+    ['param-cluster-skew','val-cluster-skew', v=>v],
+    ['param-base-nodes','val-base-nodes', v=>v],
+    ['param-manual-scale','val-manual-scale', v=>parseFloat(v).toFixed(2)],
+  ];
+  for (const [id, vid, fmt] of sliders) {
+    const el = $(id);
+    if (el) {
+      el.addEventListener('input', () => { $(vid).textContent = fmt(el.value); });
+    }
+  }
+
+  window.addEventListener('resize', () => { if (isDialogOpen) drawField(); });
+
+  // 初始化
+  generateClusters();
+  resetAll();
+})();
+</script>
+</body>
+</html>
