@@ -5,6 +5,7 @@
 一个用于探索 AI 记忆检索机制的交互式模拟器。
 
 > 🌐 **Non-Chinese Users**: The simulator UI is in Chinese. If you need an English version, you can paste the HTML file into any AI tool (ChatGPT, Claude, Gemini, etc.) and ask it to translate all Chinese text to English.
+![Uploading image.png…]()
 
 ---
 
