@@ -37,6 +37,33 @@
 | 链路深度 | 从主峰向外传播的步数 |
 | T1 确定阈值 | >0.75 时系统进入「确定」状态 |
 
+## 自动化实验
+
+`experiment_template.py` 是配套的自动化试验脚本，用于批量运行实验并生成数据。
+
+### 依赖
+
+```bash
+pip install playwright matplotlib numpy
+playwright install chromium
+```
+
+### 使用
+
+1. 复制 `experiment_template.py`，重命名为你的实验名称
+2. 修改脚本中「用户修改区域」的配置（实验矩阵、参数、输出路径）
+3. 运行：
+
+```bash
+python experiment_template.py
+```
+
+脚本会自动：
+- 按配置批量跑实验（支持并发）
+- 输出 CSV 原始数据
+- 生成对比图表（成功率、T1 均值）
+- 生成实验报告
+
 ## 实验结论
 
 通过本模拟器，我们发现：
