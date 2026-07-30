@@ -85,13 +85,42 @@ python experiment_template.py
 - 生成对比图表（成功率、T1 均值）| Generate comparison charts (success rate, T1 average)
 - 生成实验报告 | Generate experiment report
 
-## 实验结论 | Findings
+## 📊 实验数据 / Experimental Data
 
-通过本模拟器，我们发现 | Key findings from this simulator:
+本仓库包含 V5.4 弹性空间实验的完整数据，位于 [`experiments/elastic_space_v54/`](experiments/elastic_space_v54/) 目录下：
 
-- 固定空间下，节点超过 800 后性能急剧下降 | With fixed space, performance drops sharply beyond 800 nodes
-- 弹性空间使 2000 节点成功率从 13.3% 提升到 66.7% | Elastic space improves 2000-node success rate from 13.3% to 66.7%
-- 节点密度恒定比节点数量更重要 | Constant node density matters more than node count
+| 文件 / File | 说明 / Description |
+|-------------|-------------------|
+| [`exp_elastic_space_v54.py`](exp_elastic_space_v54.py) | 自动化实验脚本 / Automated experiment script |
+| [`exp_elastic_space_v54.csv`](experiments/elastic_space_v54/exp_elastic_space_v54.csv) | 原始实验数据（每轮检索的完整记录） / Raw experimental data |
+| [`exp_elastic_space_v54_report.txt`](experiments/elastic_space_v54/exp_elastic_space_v54_report.txt) | 实验报告（汇总统计 + 关键发现） / Experiment report |
+| [`exp_elastic_space_v54_plot.png`](experiments/elastic_space_v54/exp_elastic_space_v54_plot.png) | 可视化图表 / Visualization plot |
+
+这些数据可以直接复现本文档中的所有实验结论。
+All conclusions in this document are reproducible using these data.
+
+---
+
+## 实验结论 / Key Findings
+
+> **弹性空间使 2000 节点成功率从 13.3% 提升到 66.7%。节点密度恒定比节点数量更重要。**
+
+| 节点量级 / Nodes | 固定空间 / Fixed | 弹性空间 / Elastic | 提升 / Improvement |
+|-----------------|------------------|-------------------|-------------------|
+| 800 | 33.3% | **70.0%** | +36.7% |
+| 1200 | 30.0% | **76.7%** | +46.7% |
+| 2000 | 13.3% | **66.7%** | +53.3% |
+
+固定空间下，节点超过 800 后性能急剧下降；弹性空间通过同步扩展语义空间使密度保持恒定，从根本上解决了这个问题。
+
+> In fixed space, performance drops sharply beyond 800 nodes. Elastic space maintains constant density by scaling the semantic space, solving the problem at its root.
+
+---
+
+## 下一步计划 / Next Steps
+
+- V6：可调随机种子 + 时序边遗忘机制探索
+- 接入真实 LLM 的书童协议系统
 
 ## 许可证 | License
 
