@@ -8,6 +8,10 @@
 
 ---
 
+## 界面预览 | Screenshot
+
+![神经记忆场模拟器界面](v2-7ba83d65557235358c32a0be1c593a7d_720w.png)
+
 ## 这是什么 | What is this
 
 这是一个在浏览器中运行的记忆场模拟器。它将对话记忆建模为图结构，通过热核扩散和链路传播来模拟记忆的激活与检索。主要用来研究：
@@ -91,3 +95,17 @@ python experiment_template.py
 ## 许可证 | License
 
 MIT License
+
+## 贡献 | Contributing
+
+欢迎贡献！如果你对记忆检索机制感兴趣，欢迎：
+
+- 提交 Issue 反馈问题或建议
+- Fork 项目提交 Pull Request
+- 分享你的实验结果
+
+Contributions are welcome! If you're interested in memory retrieval mechanisms:
+
+- Open an Issue to report bugs or suggest features
+- Fork the repo and submit a Pull Request
+- Share your experiment results
